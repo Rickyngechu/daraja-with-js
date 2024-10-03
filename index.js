@@ -98,10 +98,14 @@ app.post("/initiatepush", async (req, res) => {
     const paymentData = await initiateDaraja();
     const paymentObj = await paymentData.json();
 
+    if (paymentObj.errorCode === "400.002.02")
+      throw new Error(`${paymentObj.errorMessage}`);
+
     checkoutRequestID = paymentObj.CheckoutRequestID;
     res.json({ message: "Success", data: paymentObj });
   } catch (err) {
-    res.status(404).send("Failed performing API fetch");
+    console.error(err.message);
+    res.status(404).send(err.message);
   }
 });
 
