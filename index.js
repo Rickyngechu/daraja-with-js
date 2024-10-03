@@ -1,5 +1,6 @@
 const ngrok = require("@ngrok/ngrok");
 const express = require("express");
+const path = require("path");
 const dotenv = require("dotenv");
 dotenv.config();
 
@@ -10,6 +11,7 @@ const username = process.env.USER;
 const password = process.env.PASSWORD;
 const authUrl = process.env.AUTHENTICATION_URL;
 const processRequest = process.env.PROCESS_REQUEST;
+const queryStatusUrl = process.env.QUERY_STATUS;
 const transactionStatusUrl = process.env.TRANSACTION_STATUS;
 
 const phone = Number(process.env.PHONE);
@@ -37,6 +39,7 @@ const credentials = btoa(`${username}:${password}`);
 // Create webserver
 const app = express();
 
+app.use("/static", express.static(path.join(__dirname, "public")));
 // Generate a timestamp with the following function (format: YYYYMMDDHHmmss)
 const generateTimestamp = () => {
   const now = new Date();
@@ -60,7 +63,7 @@ const getToken = async function () {
 };
 
 app.get("/", (req, res) => {
-  res.send("Hello from daraja API");
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
 let checkoutRequestID = "";
@@ -117,7 +120,7 @@ app.post("/confirmpayment", async (req, res) => {
     const token = tokenObject.access_token;
 
     const getTransactionStatus = async function () {
-      return await fetch(`${transactionStatusUrl}`, {
+      return await fetch(`${queryStatusUrl}`, {
         method: "POST",
         headers: {
           "Content-type": "application/json",
@@ -141,6 +144,46 @@ app.post("/confirmpayment", async (req, res) => {
     res.status(404).send("Failed performing API fetch");
   }
 });
+
+// app.post("/transaction-status", async (req, res) => {
+//   try {
+//     // Generate token for auth
+//     const tokenData = await getToken();
+//     const tokenObject = await tokenData.json();
+//     const token = tokenObject.access_token;
+
+//     const fetchTransactionStatus = async function () {
+//       return await fetch(`${transactionStatusUrl}`, {
+//         method: "POST",
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${token}`,
+//         },
+//         body: JSON.stringify({
+//           Initiator: "testapiuser",
+//           SecurityCredential:
+//             "ClONZiMYBpc65lmpJ7nvnrDmUe0WvHvA5QbOsPjEo92B6IGFwDdvdeJIFL0kgwsEKWu6SQKG4ZZUxjC",
+//           "Command ID": "TransactionStatusQuery",
+//           "Transaction ID": "SJ33SR2RUR",
+//           OriginatorConversationID: "AG_20190826_0000777ab7d848b9e721",
+//           PartyA: 174379,
+//           IdentifierType: "4",
+//           ResultURL: "http://myservice:8080/transactionstatus/result",
+//           QueueTimeOutURL: "http://myservice:8080/timeout",
+//           Remarks: "OK",
+//           Occasion: "OK",
+//         }),
+//       });
+//     };
+
+//     const statusData = await fetchTransactionStatus();
+//     const statusObj = await statusData.json();
+
+//     res.json({ message: "Success", data: statusObj });
+//   } catch (err) {
+//     res.status(404).send("Failed to fetch transaction status!");
+//   }
+// });
 
 app.listen(port, "127.0.0.1", () => {
   console.log(`App listening on port ${port} `);
